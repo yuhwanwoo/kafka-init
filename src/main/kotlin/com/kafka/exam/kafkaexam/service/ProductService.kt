@@ -1,6 +1,6 @@
 package com.kafka.exam.kafkaexam.service
 
-import com.kafka.exam.kafkaexam.controller.ProductRegisterRequest
+import com.kafka.exam.kafkaexam.controller.dto.request.ProductRegisterRequest
 import com.kafka.exam.kafkaexam.producer.KafkaProducer
 import org.springframework.stereotype.Service
 import tools.jackson.databind.ObjectMapper

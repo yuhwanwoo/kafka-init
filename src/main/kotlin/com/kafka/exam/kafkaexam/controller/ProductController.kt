@@ -1,5 +1,7 @@
 package com.kafka.exam.kafkaexam.controller
 
+import com.kafka.exam.kafkaexam.controller.dto.request.ProductRegisterRequest
+import com.kafka.exam.kafkaexam.controller.dto.response.ProductRegisterResponse
 import com.kafka.exam.kafkaexam.service.ProductService
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -22,15 +24,3 @@ class ProductController(
         )
     }
 }
-
-data class ProductRegisterRequest(
-    val productId: String,
-    val name: String,
-    val price: Long,
-    val category: String
-)
-
-data class ProductRegisterResponse(
-    val productId: String,
-    val message: String
-)

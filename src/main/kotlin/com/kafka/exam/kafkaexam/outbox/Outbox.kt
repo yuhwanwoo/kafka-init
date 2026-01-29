@@ -7,7 +7,7 @@ data class Outbox(
     val id: String = UUID.randomUUID().toString(),
     val aggregateType: String,        // 예: "Product", "Order"
     val aggregateId: String,          // 예: productId, orderId
-    val eventType: String,            // 예: "ProductCreated", "OrderPlaced"
+    val eventType: OutboxEventType,
     val payload: String,              // JSON 페이로드
     val topic: String,                // Kafka 토픽
     val status: OutboxStatus = OutboxStatus.PENDING,

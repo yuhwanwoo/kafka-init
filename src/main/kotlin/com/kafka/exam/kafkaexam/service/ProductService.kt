@@ -1,6 +1,7 @@
 package com.kafka.exam.kafkaexam.service
 
 import com.kafka.exam.kafkaexam.controller.dto.request.ProductRegisterRequest
+import com.kafka.exam.kafkaexam.controller.dto.request.ProductUpdateRequest
 import com.kafka.exam.kafkaexam.outbox.Outbox
 import com.kafka.exam.kafkaexam.outbox.OutboxEventType
 import com.kafka.exam.kafkaexam.outbox.OutboxRepository
@@ -26,6 +27,27 @@ class ProductService(
             aggregateType = "Product",
             aggregateId = request.productId,
             eventType = OutboxEventType.PRODUCT_REGISTERED,
+            payload = payload,
+            topic = PRODUCT_TOPIC
+        )
+
+        outboxRepository.save(outbox)
+    }
+
+    fun updateProduct(productId: String, request: ProductUpdateRequest) {
+        val payload = objectMapper.writeValueAsString(
+            mapOf(
+                "productId" to productId,
+                "name" to request.name,
+                "price" to request.price,
+                "category" to request.category
+            )
+        )
+
+        val outbox = Outbox(
+            aggregateType = "Product",
+            aggregateId = productId,
+            eventType = OutboxEventType.PRODUCT_UPDATED,
             payload = payload,
             topic = PRODUCT_TOPIC
         )

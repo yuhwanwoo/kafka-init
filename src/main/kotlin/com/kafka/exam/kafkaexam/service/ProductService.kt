@@ -54,4 +54,20 @@ class ProductService(
 
         outboxRepository.save(outbox)
     }
+
+    fun deleteProduct(productId: String) {
+        val payload = objectMapper.writeValueAsString(
+            mapOf("productId" to productId)
+        )
+
+        val outbox = Outbox(
+            aggregateType = "Product",
+            aggregateId = productId,
+            eventType = OutboxEventType.PRODUCT_DELETED,
+            payload = payload,
+            topic = PRODUCT_TOPIC
+        )
+
+        outboxRepository.save(outbox)
+    }
 }

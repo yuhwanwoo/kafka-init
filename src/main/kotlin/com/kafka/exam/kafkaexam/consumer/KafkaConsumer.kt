@@ -19,6 +19,18 @@ class KafkaConsumer {
             record.key(),
             record.value()
         )
+
+        processMessage(record)
         ack.acknowledge()
+    }
+
+    private fun processMessage(record: ConsumerRecord<String, String>) {
+        val payload = record.value()
+        if (payload.isNullOrBlank()) {
+            throw IllegalArgumentException("메시지 payload가 비어있습니다. key=${record.key()}")
+        }
+
+        // 메시지 처리 로직
+        log.info("메시지 처리 완료 - key: {}, value: {}", record.key(), payload)
     }
 }

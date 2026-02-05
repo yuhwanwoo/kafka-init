@@ -2,8 +2,11 @@ package com.kafka.exam.kafkaexam.consumer
 
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.slf4j.LoggerFactory
+import org.springframework.kafka.annotation.DltHandler
 import org.springframework.kafka.annotation.KafkaListener
 import org.springframework.kafka.support.Acknowledgment
+import org.springframework.kafka.support.KafkaHeaders
+import org.springframework.messaging.handler.annotation.Header
 import org.springframework.stereotype.Service
 
 @Service
@@ -24,7 +27,8 @@ class KafkaConsumer(
         }
 
         log.info(
-            "Received message - partition: {}, key: {}, value: {}",
+            "Received message - topic: {}, partition: {}, key: {}, value: {}",
+            record.topic(),
             record.partition(),
             record.key(),
             record.value()
@@ -32,6 +36,29 @@ class KafkaConsumer(
 
         processMessage(record)
         idempotencyRepository.markAsProcessed(messageKey)
+        ack.acknowledge()
+    }
+
+    @DltHandler
+    fun handleDlt(
+        record: ConsumerRecord<String, String>,
+        @Header(KafkaHeaders.RECEIVED_TOPIC) topic: String,
+        @Header(KafkaHeaders.EXCEPTION_MESSAGE, required = false) exceptionMessage: String?,
+        ack: Acknowledgment
+    ) {
+        log.error(
+            "DLT 메시지 수신 - topic: {}, partition: {}, offset: {}, key: {}, value: {}, error: {}",
+            topic,
+            record.partition(),
+            record.offset(),
+            record.key(),
+            record.value(),
+            exceptionMessage ?: "Unknown error"
+        )
+
+        // DLT 메시지 처리 로직 (알림, DB 저장 등)
+        // TODO: 실패 메시지 저장 또는 알림 발송
+
         ack.acknowledge()
     }
 

@@ -11,15 +11,18 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory
 import org.springframework.kafka.core.*
 import org.springframework.kafka.listener.ContainerProperties
+import org.springframework.kafka.transaction.KafkaTransactionManager
 
 @Configuration
 class KafkaConfig(
     @Value("\${spring.kafka.bootstrap-servers}") private val bootstrapServers: String,
-    @Value("\${spring.kafka.consumer.group-id}") private val groupId: String
+    @Value("\${spring.kafka.consumer.group-id}") private val groupId: String,
+    @Value("\${kafka.transaction.id-prefix:kafka-tx-}") private val transactionIdPrefix: String
 ) {
 
     private val log = LoggerFactory.getLogger(KafkaConfig::class.java)
 
+    // 일반 Producer (트랜잭션 없음)
     @Bean
     fun producerFactory(): ProducerFactory<String, String> {
         val config = mapOf(
@@ -29,9 +32,36 @@ class KafkaConfig(
         return DefaultKafkaProducerFactory(config, StringSerializer(), StringSerializer())
     }
 
+    // 트랜잭션용 Producer
+    @Bean
+    fun transactionalProducerFactory(): ProducerFactory<String, String> {
+        val config = mapOf(
+            ProducerConfig.BOOTSTRAP_SERVERS_CONFIG to bootstrapServers,
+            ProducerConfig.ACKS_CONFIG to "all",
+            ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG to true,  // 멱등성 필수
+            ProducerConfig.RETRIES_CONFIG to Int.MAX_VALUE,
+            ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION to 5
+        )
+        val factory = DefaultKafkaProducerFactory<String, String>(config, StringSerializer(), StringSerializer())
+        factory.setTransactionIdPrefix(transactionIdPrefix)
+        return factory
+    }
+
     @Bean
     fun kafkaTemplate(): KafkaTemplate<String, String> {
         return KafkaTemplate(producerFactory())
+    }
+
+    // 트랜잭션용 KafkaTemplate
+    @Bean
+    fun transactionalKafkaTemplate(): KafkaTemplate<String, String> {
+        return KafkaTemplate(transactionalProducerFactory())
+    }
+
+    // 트랜잭션 매니저
+    @Bean
+    fun kafkaTransactionManager(): KafkaTransactionManager<String, String> {
+        return KafkaTransactionManager(transactionalProducerFactory())
     }
 
     @Bean
@@ -39,7 +69,8 @@ class KafkaConfig(
         val config = mapOf(
             ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG to bootstrapServers,
             ConsumerConfig.GROUP_ID_CONFIG to groupId,
-            ConsumerConfig.AUTO_OFFSET_RESET_CONFIG to "earliest"
+            ConsumerConfig.AUTO_OFFSET_RESET_CONFIG to "earliest",
+            ConsumerConfig.ISOLATION_LEVEL_CONFIG to "read_committed"  // 커밋된 트랜잭션 메시지만 읽기
         )
         return DefaultKafkaConsumerFactory(config, StringDeserializer(), StringDeserializer())
     }

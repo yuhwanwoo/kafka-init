@@ -2,6 +2,7 @@ package com.kafka.exam.kafkaexam.producer
 
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.kafka.core.KafkaOperations
 import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.stereotype.Service
 
@@ -43,7 +44,7 @@ class KafkaProducer(
     }
 
     // 커스텀 트랜잭션 실행 (콜백 방식)
-    fun <T> executeInTransaction(action: (KafkaTemplate<String, String>) -> T): T? {
+    fun <T> executeInTransaction(action: (KafkaOperations<String, String>) -> T): T? {
         return transactionalKafkaTemplate.executeInTransaction { operations ->
             action(operations)
         }

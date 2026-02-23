@@ -106,9 +106,9 @@ class KafkaConfig(
     @Bean
     fun batchKafkaListenerContainerFactory(): ConcurrentKafkaListenerContainerFactory<String, String> {
         val factory = ConcurrentKafkaListenerContainerFactory<String, String>()
-        factory.consumerFactory = batchConsumerFactory()
+        factory.setConsumerFactory(batchConsumerFactory())
         factory.setConcurrency(batchConcurrency)
-        factory.isBatchListener = true  // 배치 모드 활성화
+        factory.setBatchListener(true)  // 배치 모드 활성화
         factory.containerProperties.ackMode = ContainerProperties.AckMode.MANUAL_IMMEDIATE
         factory.containerProperties.isAsyncAcks = true
         return factory

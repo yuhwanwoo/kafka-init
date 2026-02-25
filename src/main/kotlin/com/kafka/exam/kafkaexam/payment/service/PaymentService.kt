@@ -3,6 +3,7 @@ package com.kafka.exam.kafkaexam.payment.service
 import com.kafka.exam.kafkaexam.outbox.Outbox
 import com.kafka.exam.kafkaexam.outbox.OutboxEventType
 import com.kafka.exam.kafkaexam.outbox.OutboxRepository
+import com.kafka.exam.kafkaexam.payment.client.PaymentGatewayClient
 import com.kafka.exam.kafkaexam.payment.domain.Payment
 import com.kafka.exam.kafkaexam.payment.domain.PaymentRepository
 import com.kafka.exam.kafkaexam.saga.command.CancelPaymentCommand
@@ -19,7 +20,8 @@ import tools.jackson.databind.ObjectMapper
 class PaymentService(
     private val paymentRepository: PaymentRepository,
     private val outboxRepository: OutboxRepository,
-    private val objectMapper: ObjectMapper
+    private val objectMapper: ObjectMapper,
+    private val paymentGatewayClient: PaymentGatewayClient
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -39,28 +41,52 @@ class PaymentService(
             amount = command.amount
         )
 
-        // 실제로는 여기서 결제 게이트웨이 호출
-        // 간단히 항상 성공으로 처리
-        payment.complete()
-        paymentRepository.save(payment)
+        // Circuit Breaker가 적용된 외부 결제 게이트웨이 호출
+        val result = paymentGatewayClient.processPayment(command.orderId, command.amount)
 
-        val event = PaymentCompletedEvent(
-            sagaId = command.sagaId,
-            orderId = command.orderId,
-            paymentId = payment.paymentId,
-            amount = command.amount
-        )
+        if (result.success) {
+            payment.complete()
+            paymentRepository.save(payment)
 
-        val outbox = Outbox(
-            aggregateType = "Payment",
-            aggregateId = payment.paymentId,
-            eventType = OutboxEventType.PAYMENT_COMPLETED,
-            payload = objectMapper.writeValueAsString(event),
-            topic = SAGA_EVENT_TOPIC
-        )
-        outboxRepository.save(outbox)
+            val event = PaymentCompletedEvent(
+                sagaId = command.sagaId,
+                orderId = command.orderId,
+                paymentId = payment.paymentId,
+                amount = command.amount
+            )
 
-        log.info("Payment completed: paymentId={}", payment.paymentId)
+            val outbox = Outbox(
+                aggregateType = "Payment",
+                aggregateId = payment.paymentId,
+                eventType = OutboxEventType.PAYMENT_COMPLETED,
+                payload = objectMapper.writeValueAsString(event),
+                topic = SAGA_EVENT_TOPIC
+            )
+            outboxRepository.save(outbox)
+
+            log.info("Payment completed: paymentId={}, transactionId={}", payment.paymentId, result.transactionId)
+        } else {
+            payment.fail(result.errorMessage ?: "결제 실패")
+            paymentRepository.save(payment)
+
+            val event = PaymentFailedEvent(
+                sagaId = command.sagaId,
+                orderId = command.orderId,
+                reason = result.errorMessage ?: "결제 실패"
+            )
+
+            val outbox = Outbox(
+                aggregateType = "Payment",
+                aggregateId = payment.paymentId,
+                eventType = OutboxEventType.PAYMENT_FAILED,
+                payload = objectMapper.writeValueAsString(event),
+                topic = SAGA_EVENT_TOPIC
+            )
+            outboxRepository.save(outbox)
+
+            log.error("Payment failed: paymentId={}, reason={}", payment.paymentId, result.errorMessage)
+        }
+
         return payment
     }
 

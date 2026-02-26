@@ -1,5 +1,7 @@
 package com.kafka.exam.kafkaexam.consumer
 
+import com.kafka.exam.kafkaexam.consumer.dlt.FailedMessage
+import com.kafka.exam.kafkaexam.consumer.dlt.FailedMessageRepository
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.slf4j.LoggerFactory
 import org.springframework.kafka.annotation.DltHandler
@@ -11,7 +13,8 @@ import org.springframework.stereotype.Service
 
 @Service
 class KafkaConsumer(
-    private val idempotencyRepository: IdempotencyRepository
+    private val idempotencyRepository: IdempotencyRepository,
+    private val failedMessageRepository: FailedMessageRepository
 ) {
 
     private val log = LoggerFactory.getLogger(KafkaConsumer::class.java)
@@ -56,8 +59,16 @@ class KafkaConsumer(
             exceptionMessage ?: "Unknown error"
         )
 
-        // DLT 메시지 처리 로직 (알림, DB 저장 등)
-        // TODO: 실패 메시지 저장 또는 알림 발송
+        val failedMessage = FailedMessage(
+            originalTopic = topic.removeSuffix("-dlt"),
+            partitionId = record.partition(),
+            offsetId = record.offset(),
+            messageKey = record.key(),
+            messageValue = record.value(),
+            errorMessage = exceptionMessage
+        )
+        failedMessageRepository.save(failedMessage)
+        log.info("실패 메시지 저장 완료 - id: {}", failedMessage.id)
 
         ack.acknowledge()
     }

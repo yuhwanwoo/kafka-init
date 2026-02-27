@@ -1,19 +1,41 @@
 package com.kafka.exam.kafkaexam.outbox
 
+import jakarta.persistence.*
 import java.time.LocalDateTime
 import java.util.UUID
 
-data class Outbox(
+@Entity
+@Table(name = "outbox")
+class Outbox(
+    @Id
     val id: String = UUID.randomUUID().toString(),
+
+    @Column(nullable = false)
     val aggregateType: String,        // 예: "Product", "Order"
+
+    @Column(nullable = false)
     val aggregateId: String,          // 예: productId, orderId
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     val eventType: OutboxEventType,
+
+    @Column(columnDefinition = "TEXT", nullable = false)
     val payload: String,              // JSON 페이로드
+
+    @Column(nullable = false)
     val topic: String,                // Kafka 토픽
-    val status: OutboxStatus = OutboxStatus.PENDING,
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    var status: OutboxStatus = OutboxStatus.PENDING,
+
+    @Column(nullable = false)
     val createdAt: LocalDateTime = LocalDateTime.now(),
-    val processedAt: LocalDateTime? = null,
-    val retryCount: Int = 0
+
+    var processedAt: LocalDateTime? = null,
+
+    var retryCount: Int = 0
 )
 
 enum class OutboxStatus {

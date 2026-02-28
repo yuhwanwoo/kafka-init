@@ -2,11 +2,9 @@ package com.kafka.exam.kafkaexam.outbox
 
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Repository
-import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 
 @Repository
-@Transactional
 class OutboxRepositoryImpl(
     private val jpaOutboxRepository: JpaOutboxRepository
 ) : OutboxRepository {

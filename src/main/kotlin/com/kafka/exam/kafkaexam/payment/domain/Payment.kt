@@ -27,27 +27,42 @@ class Payment(
     @Column(nullable = false)
     var status: PaymentStatus = PaymentStatus.PENDING,
 
+    var transactionId: String? = null,
+
+    var paymentKey: String? = null,
+
+    var refundId: String? = null,
+
     var failureReason: String? = null,
 
     @Column(nullable = false)
     val createdAt: LocalDateTime = LocalDateTime.now(),
 
-    var updatedAt: LocalDateTime = LocalDateTime.now()
+    var updatedAt: LocalDateTime = LocalDateTime.now(),
+
+    var completedAt: LocalDateTime? = null,
+
+    var cancelledAt: LocalDateTime? = null
 ) {
-    fun complete() {
-        status = PaymentStatus.COMPLETED
-        updatedAt = LocalDateTime.now()
+    fun complete(transactionId: String?, paymentKey: String?) {
+        this.status = PaymentStatus.COMPLETED
+        this.transactionId = transactionId
+        this.paymentKey = paymentKey
+        this.completedAt = LocalDateTime.now()
+        this.updatedAt = LocalDateTime.now()
     }
 
     fun fail(reason: String) {
-        status = PaymentStatus.FAILED
-        failureReason = reason
-        updatedAt = LocalDateTime.now()
+        this.status = PaymentStatus.FAILED
+        this.failureReason = reason
+        this.updatedAt = LocalDateTime.now()
     }
 
-    fun cancel(reason: String) {
-        status = PaymentStatus.CANCELLED
-        failureReason = reason
-        updatedAt = LocalDateTime.now()
+    fun cancel(reason: String, refundId: String?) {
+        this.status = PaymentStatus.CANCELLED
+        this.failureReason = reason
+        this.refundId = refundId
+        this.cancelledAt = LocalDateTime.now()
+        this.updatedAt = LocalDateTime.now()
     }
 }

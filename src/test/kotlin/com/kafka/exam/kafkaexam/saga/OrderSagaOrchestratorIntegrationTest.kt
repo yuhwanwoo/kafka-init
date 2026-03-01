@@ -1,5 +1,7 @@
 package com.kafka.exam.kafkaexam.saga
 
+import com.kafka.exam.kafkaexam.order.domain.Order
+import com.kafka.exam.kafkaexam.order.domain.OrderRepository
 import com.kafka.exam.kafkaexam.outbox.OutboxEventType
 import com.kafka.exam.kafkaexam.outbox.OutboxRepository
 import com.kafka.exam.kafkaexam.outbox.OutboxStatus
@@ -8,14 +10,12 @@ import com.kafka.exam.kafkaexam.saga.core.SagaStatus
 import com.kafka.exam.kafkaexam.saga.core.SagaStep
 import com.kafka.exam.kafkaexam.saga.event.*
 import com.kafka.exam.kafkaexam.saga.orchestrator.OrderSagaOrchestrator
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.kafka.test.context.EmbeddedKafka
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.ActiveProfiles
-import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
 import java.util.UUID
 import kotlin.test.assertEquals
@@ -24,8 +24,7 @@ import kotlin.test.assertNull
 
 @SpringBootTest
 @ActiveProfiles("test")
-@DirtiesContext
-@Transactional
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @EmbeddedKafka(
     partitions = 1,
     topics = ["test-saga-command-topic", "test-saga-event-topic"]
@@ -41,10 +40,8 @@ class OrderSagaOrchestratorIntegrationTest {
     @Autowired
     private lateinit var outboxRepository: OutboxRepository
 
-    @BeforeEach
-    fun setUp() {
-        outboxRepository.deleteAll()
-    }
+    @Autowired
+    private lateinit var orderRepository: OrderRepository
 
     @Test
     fun `Saga 시작 시 SagaState가 생성되고 CreateOrder 커맨드가 발행된다`() {
@@ -167,6 +164,17 @@ class OrderSagaOrchestratorIntegrationTest {
             quantity = 2,
             totalAmount = BigDecimal("10000")
         )
+
+        // Order 엔티티 생성 (실제 환경에서는 SagaCommandConsumer가 생성)
+        val order = Order(
+            orderId = sagaState.orderId,
+            sagaId = sagaState.sagaId,
+            customerId = sagaState.customerId,
+            productId = sagaState.productId,
+            quantity = sagaState.quantity,
+            totalAmount = sagaState.totalAmount
+        )
+        orderRepository.save(order)
 
         // OrderCreated -> PaymentCompleted 순서로 이벤트 처리
         orderSagaOrchestrator.handleEvent(

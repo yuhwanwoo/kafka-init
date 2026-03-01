@@ -60,8 +60,8 @@ class KafkaConfig(
         return KafkaTemplate(transactionalProducerFactory())
     }
 
-    // 트랜잭션 매니저
-    @Bean
+    // Kafka 트랜잭션 매니저 (JPA transactionManager와 구분)
+    @Bean("kafkaTransactionManager")
     fun kafkaTransactionManager(): KafkaTransactionManager<String, String> {
         return KafkaTransactionManager(transactionalProducerFactory())
     }

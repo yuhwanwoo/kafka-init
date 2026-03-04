@@ -222,13 +222,15 @@ class KafkaAclService(
 
                 val filter = AclBindingFilter(resourcePatternFilter, entryFilter)
 
-                val results = client.deleteAcls(listOf(filter))
-                    .all()
-                    .get(timeoutSeconds, TimeUnit.SECONDS)
+                val deleteResult = client.deleteAcls(listOf(filter))
+                deleteResult.all().get(timeoutSeconds, TimeUnit.SECONDS)
 
+                // 각 필터별 결과에서 삭제된 ACL 수 계산
+                val filterResults = deleteResult.values()
                 var deletedCount = 0
-                for (filterResult in results) {
-                    deletedCount += filterResult.values().get().size
+                for ((_, future) in filterResults) {
+                    val filterResult = future.get(timeoutSeconds, TimeUnit.SECONDS)
+                    deletedCount += filterResult.values().size
                 }
                 log.info("ACL 삭제 완료 - count: {}", deletedCount)
                 deletedCount > 0
@@ -252,13 +254,14 @@ class KafkaAclService(
                 )
                 val filter = AclBindingFilter(resourcePatternFilter, AccessControlEntryFilter.ANY)
 
-                val results = client.deleteAcls(listOf(filter))
-                    .all()
-                    .get(timeoutSeconds, TimeUnit.SECONDS)
+                val deleteResult = client.deleteAcls(listOf(filter))
+                deleteResult.all().get(timeoutSeconds, TimeUnit.SECONDS)
 
+                val filterResults = deleteResult.values()
                 var deletedCount = 0
-                for (filterResult in results) {
-                    deletedCount += filterResult.values().get().size
+                for ((_, future) in filterResults) {
+                    val filterResult = future.get(timeoutSeconds, TimeUnit.SECONDS)
+                    deletedCount += filterResult.values().size
                 }
                 log.info("리소스 ACL 전체 삭제 완료 - resourceType: {}, resourceName: {}, count: {}",
                     resourceType, resourceName, deletedCount)

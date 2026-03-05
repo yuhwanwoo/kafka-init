@@ -4,6 +4,7 @@ plugins {
     kotlin("plugin.jpa") version "2.2.21"
     id("org.springframework.boot") version "4.0.1"
     id("io.spring.dependency-management") version "1.1.7"
+    id("com.github.davidmc24.gradle.plugin.avro") version "1.9.1"
 }
 
 group = "com.kafka.exam"
@@ -18,6 +19,7 @@ java {
 
 repositories {
     mavenCentral()
+    maven("https://packages.confluent.io/maven/")
 }
 
 dependencies {
@@ -38,6 +40,11 @@ dependencies {
     implementation("org.springframework:spring-aop")
     implementation("org.aspectj:aspectjweaver")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
+
+g    // Avro & Schema Registry
+    implementation("org.apache.avro:avro:1.12.0")
+    implementation("io.confluent:kafka-avro-serializer:7.7.1")
+    implementation("io.confluent:kafka-schema-registry-client:7.7.1")
 
     runtimeOnly("com.h2database:h2")
     testImplementation("org.springframework.boot:spring-boot-starter-kafka-test")

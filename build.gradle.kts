@@ -41,7 +41,7 @@ dependencies {
     implementation("org.aspectj:aspectjweaver")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
 
-g    // Avro & Schema Registry
+    // Avro & Schema Registry
     implementation("org.apache.avro:avro:1.12.0")
     implementation("io.confluent:kafka-avro-serializer:7.7.1")
     implementation("io.confluent:kafka-schema-registry-client:7.7.1")

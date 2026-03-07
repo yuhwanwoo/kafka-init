@@ -1,0 +1,67 @@
+{
+  "namespace": "com.kafka.exam.kafkaexam.avro",
+  "type": "record",
+  "name": "PaymentEvent",
+  "doc": "결제 이벤트 스키마",
+  "fields": [
+    {
+      "name": "eventId",
+      "type": "string",
+      "doc": "이벤트 고유 ID"
+    },
+    {
+      "name": "paymentId",
+      "type": "string",
+      "doc": "결제 ID"
+    },
+    {
+      "name": "orderId",
+      "type": "string",
+      "doc": "주문 ID"
+    },
+    {
+      "name": "amount",
+      "type": "long",
+      "doc": "결제 금액 (센트 단위)"
+    },
+    {
+      "name": "currency",
+      "type": {
+        "type": "string",
+        "default": "KRW"
+      },
+      "default": "KRW",
+      "doc": "통화 코드"
+    },
+    {
+      "name": "paymentMethod",
+      "type": {
+        "type": "enum",
+        "name": "PaymentMethod",
+        "symbols": ["CARD", "BANK_TRANSFER", "VIRTUAL_ACCOUNT", "MOBILE"]
+      },
+      "doc": "결제 수단"
+    },
+    {
+      "name": "eventType",
+      "type": {
+        "type": "enum",
+        "name": "PaymentEventType",
+        "symbols": ["INITIATED", "COMPLETED", "FAILED", "CANCELLED", "REFUNDED"]
+      },
+      "doc": "이벤트 타입"
+    },
+    {
+      "name": "timestamp",
+      "type": "long",
+      "logicalType": "timestamp-millis",
+      "doc": "이벤트 발생 시각"
+    },
+    {
+      "name": "failureReason",
+      "type": ["null", "string"],
+      "default": null,
+      "doc": "실패 사유"
+    }
+  ]
+}

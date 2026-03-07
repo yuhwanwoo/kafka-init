@@ -1,0 +1,49 @@
+{
+  "namespace": "com.kafka.exam.kafkaexam.avro",
+  "type": "record",
+  "name": "InventoryEvent",
+  "doc": "재고 이벤트 스키마",
+  "fields": [
+    {
+      "name": "eventId",
+      "type": "string",
+      "doc": "이벤트 고유 ID"
+    },
+    {
+      "name": "productId",
+      "type": "string",
+      "doc": "상품 ID"
+    },
+    {
+      "name": "orderId",
+      "type": ["null", "string"],
+      "default": null,
+      "doc": "연관 주문 ID"
+    },
+    {
+      "name": "quantity",
+      "type": "int",
+      "doc": "변동 수량"
+    },
+    {
+      "name": "availableStock",
+      "type": "int",
+      "doc": "가용 재고"
+    },
+    {
+      "name": "eventType",
+      "type": {
+        "type": "enum",
+        "name": "InventoryEventType",
+        "symbols": ["RESERVED", "RELEASED", "ADJUSTED", "OUT_OF_STOCK"]
+      },
+      "doc": "이벤트 타입"
+    },
+    {
+      "name": "timestamp",
+      "type": "long",
+      "logicalType": "timestamp-millis",
+      "doc": "이벤트 발생 시각"
+    }
+  ]
+}

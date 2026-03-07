@@ -1,0 +1,62 @@
+{
+  "namespace": "com.kafka.exam.kafkaexam.avro",
+  "type": "record",
+  "name": "OrderEvent",
+  "doc": "주문 이벤트 스키마",
+  "fields": [
+    {
+      "name": "eventId",
+      "type": "string",
+      "doc": "이벤트 고유 ID"
+    },
+    {
+      "name": "orderId",
+      "type": "string",
+      "doc": "주문 ID"
+    },
+    {
+      "name": "customerId",
+      "type": "string",
+      "doc": "고객 ID"
+    },
+    {
+      "name": "productId",
+      "type": "string",
+      "doc": "상품 ID"
+    },
+    {
+      "name": "quantity",
+      "type": "int",
+      "doc": "수량"
+    },
+    {
+      "name": "totalAmount",
+      "type": "long",
+      "doc": "총 금액 (센트 단위)"
+    },
+    {
+      "name": "eventType",
+      "type": {
+        "type": "enum",
+        "name": "OrderEventType",
+        "symbols": ["CREATED", "CONFIRMED", "CANCELLED", "FAILED"]
+      },
+      "doc": "이벤트 타입"
+    },
+    {
+      "name": "timestamp",
+      "type": "long",
+      "logicalType": "timestamp-millis",
+      "doc": "이벤트 발생 시각"
+    },
+    {
+      "name": "metadata",
+      "type": ["null", {
+        "type": "map",
+        "values": "string"
+      }],
+      "default": null,
+      "doc": "추가 메타데이터"
+    }
+  ]
+}

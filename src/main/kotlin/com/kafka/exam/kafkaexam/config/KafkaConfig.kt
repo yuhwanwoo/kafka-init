@@ -1,5 +1,7 @@
 package com.kafka.exam.kafkaexam.config
 
+import com.kafka.exam.kafkaexam.interceptor.LoggingConsumerInterceptor
+import com.kafka.exam.kafkaexam.interceptor.LoggingProducerInterceptor
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.common.serialization.StringDeserializer
@@ -29,7 +31,8 @@ class KafkaConfig(
     fun producerFactory(): ProducerFactory<String, String> {
         val config = mapOf(
             ProducerConfig.BOOTSTRAP_SERVERS_CONFIG to bootstrapServers,
-            ProducerConfig.ACKS_CONFIG to "all"
+            ProducerConfig.ACKS_CONFIG to "all",
+            ProducerConfig.INTERCEPTOR_CLASSES_CONFIG to LoggingProducerInterceptor::class.java.name
         )
         return DefaultKafkaProducerFactory(config, StringSerializer(), StringSerializer())
     }
@@ -72,7 +75,8 @@ class KafkaConfig(
             ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG to bootstrapServers,
             ConsumerConfig.GROUP_ID_CONFIG to groupId,
             ConsumerConfig.AUTO_OFFSET_RESET_CONFIG to "earliest",
-            ConsumerConfig.ISOLATION_LEVEL_CONFIG to "read_committed"  // 커밋된 트랜잭션 메시지만 읽기
+            ConsumerConfig.ISOLATION_LEVEL_CONFIG to "read_committed",  // 커밋된 트랜잭션 메시지만 읽기
+            ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG to LoggingConsumerInterceptor::class.java.name
         )
         return DefaultKafkaConsumerFactory(config, StringDeserializer(), StringDeserializer())
     }
@@ -97,7 +101,8 @@ class KafkaConfig(
             ConsumerConfig.ISOLATION_LEVEL_CONFIG to "read_committed",
             ConsumerConfig.MAX_POLL_RECORDS_CONFIG to maxPollRecords,  // 한 번에 가져올 최대 레코드 수
             ConsumerConfig.FETCH_MIN_BYTES_CONFIG to 1024,  // 최소 1KB 모일 때까지 대기
-            ConsumerConfig.FETCH_MAX_WAIT_MS_CONFIG to 500   // 최대 500ms 대기
+            ConsumerConfig.FETCH_MAX_WAIT_MS_CONFIG to 500,  // 최대 500ms 대기
+            ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG to LoggingConsumerInterceptor::class.java.name
         )
         return DefaultKafkaConsumerFactory(config, StringDeserializer(), StringDeserializer())
     }

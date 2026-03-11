@@ -46,6 +46,9 @@ dependencies {
     implementation("io.confluent:kafka-avro-serializer:7.7.1")
     implementation("io.confluent:kafka-schema-registry-client:7.7.1")
 
+    // Micrometer (Metrics)
+    implementation("io.micrometer:micrometer-registry-prometheus")
+
     runtimeOnly("com.h2database:h2")
     testImplementation("org.springframework.boot:spring-boot-starter-kafka-test")
     testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")

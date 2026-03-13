@@ -29,6 +29,8 @@ dependencies {
     implementation("org.springframework.kafka:spring-kafka")
     implementation("org.apache.kafka:kafka-streams")
     implementation("org.springframework.boot:spring-boot-starter-webmvc")
+    implementation("org.springframework.boot:spring-boot-starter-webflux")
+    implementation("io.projectreactor.kafka:reactor-kafka:1.3.23")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.retry:spring-retry:2.0.11")
     implementation("org.jetbrains.kotlin:kotlin-reflect")

@@ -98,7 +98,7 @@ class LoggingRebalanceListener(
      * 파티션 손실 시 호출 (cooperative rebalancing)
      * onPartitionsRevoked와 달리 오프셋 커밋 기회가 없음
      */
-    fun onPartitionsLost(partitions: Collection<TopicPartition>) {
+    override fun onPartitionsLost(partitions: Collection<TopicPartition>) {
         if (partitions.isEmpty()) {
             return
         }

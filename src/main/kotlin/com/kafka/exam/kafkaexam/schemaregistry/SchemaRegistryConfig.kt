@@ -89,7 +89,7 @@ class SchemaRegistryConfig {
     @Bean
     fun avroKafkaListenerContainerFactory(): ConcurrentKafkaListenerContainerFactory<String, SpecificRecord> {
         val factory = ConcurrentKafkaListenerContainerFactory<String, SpecificRecord>()
-        factory.consumerFactory = avroConsumerFactory()
+        factory.setConsumerFactory(avroConsumerFactory())
         factory.containerProperties.ackMode = ContainerProperties.AckMode.MANUAL_IMMEDIATE
         factory.setConcurrency(3)
         return factory

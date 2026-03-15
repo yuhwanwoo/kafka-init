@@ -68,3 +68,12 @@ kotlin {
 tasks.withType<Test> {
     useJUnitPlatform()
 }
+
+// Avro generated sources를 main sourceSets에 추가
+sourceSets {
+    main {
+        java {
+            srcDir("build/generated-main-avro-java")
+        }
+    }
+}

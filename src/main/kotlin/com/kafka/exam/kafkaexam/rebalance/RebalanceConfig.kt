@@ -55,7 +55,7 @@ class RebalanceConfig(
         offsetRepository: OffsetRepository
     ): ConcurrentKafkaListenerContainerFactory<String, String> {
         val factory = ConcurrentKafkaListenerContainerFactory<String, String>()
-        factory.consumerFactory = rebalanceAwareConsumerFactory()
+        factory.setConsumerFactory(rebalanceAwareConsumerFactory())
         factory.setConcurrency(3)
         factory.containerProperties.ackMode = ContainerProperties.AckMode.MANUAL_IMMEDIATE
 

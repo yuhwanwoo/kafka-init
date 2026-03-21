@@ -88,11 +88,11 @@ class EventStoreService(
         return eventStoreRepository.countByAggregateTypeAndAggregateId(aggregateType, aggregateId)
     }
 
-    inline fun <reified T : SagaEvent> replayEvents(aggregateType: String, aggregateId: String): List<T> {
+    fun <T : SagaEvent> replayEvents(aggregateType: String, aggregateId: String, eventClass: Class<T>): List<T> {
         return getEventsByAggregate(aggregateType, aggregateId)
             .mapNotNull { event ->
                 try {
-                    objectMapper.readValue(event.payload, T::class.java)
+                    objectMapper.readValue(event.payload, eventClass)
                 } catch (e: Exception) {
                     log.warn("Failed to deserialize event: {}", event.eventId, e)
                     null

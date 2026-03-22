@@ -1,13 +1,17 @@
 package com.kafka.exam.kafkaexam.consumer.dlt
 
 import org.springframework.data.domain.Page
+import org.springframework.data.domain.PageRequest
+import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
+import java.time.LocalDateTime
 
 @RestController
 @RequestMapping("/api/dlt")
 class DltReprocessController(
-    private val dltReprocessService: DltReprocessService
+    private val dltReprocessService: DltReprocessService,
+    private val failedMessageRepository: FailedMessageRepository
 ) {
 
     /**
@@ -134,6 +138,61 @@ class DltReprocessController(
         val updatedCount = dltReprocessService.bulkUpdateStatus(request.ids, request.status)
         return ResponseEntity.ok(BulkStatusUpdateResponse(updatedCount, request.status))
     }
+
+    /**
+     * 고급 검색
+     * GET /api/dlt/messages/search?status=PENDING&topic=xxx&startDate=2024-01-01T00:00:00&endDate=2024-12-31T23:59:59
+     */
+    @GetMapping("/messages/search")
+    fun searchMessages(
+        @RequestParam(required = false) status: FailedMessageStatus?,
+        @RequestParam(required = false) topic: String?,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) startDate: LocalDateTime?,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) endDate: LocalDateTime?,
+        @RequestParam(required = false) minRetryCount: Int?,
+        @RequestParam(defaultValue = "0") page: Int,
+        @RequestParam(defaultValue = "20") size: Int
+    ): ResponseEntity<Page<FailedMessageDto>> {
+        val pageable = PageRequest.of(page, size)
+        val messages = failedMessageRepository.searchWithFilters(
+            status, topic, startDate, endDate, minRetryCount, pageable
+        )
+        return ResponseEntity.ok(messages.map { it.toDto() })
+    }
+
+    /**
+     * 에러 메시지 키워드 검색
+     * GET /api/dlt/messages/search/error?keyword=NullPointer
+     */
+    @GetMapping("/messages/search/error")
+    fun searchByError(
+        @RequestParam keyword: String,
+        @RequestParam(defaultValue = "0") page: Int,
+        @RequestParam(defaultValue = "20") size: Int
+    ): ResponseEntity<Page<FailedMessageDto>> {
+        val pageable = PageRequest.of(page, size)
+        val messages = failedMessageRepository.searchByErrorMessage(keyword, pageable)
+        return ResponseEntity.ok(messages.map { it.toDto() })
+    }
+
+    /**
+     * 토픽 목록 조회
+     * GET /api/dlt/topics
+     */
+    @GetMapping("/topics")
+    fun getTopics(): ResponseEntity<List<String>> {
+        return ResponseEntity.ok(failedMessageRepository.findDistinctTopics())
+    }
+
+    /**
+     * 메시지 키로 검색
+     * GET /api/dlt/messages/key/{messageKey}
+     */
+    @GetMapping("/messages/key/{messageKey}")
+    fun searchByMessageKey(@PathVariable messageKey: String): ResponseEntity<List<FailedMessageDto>> {
+        val messages = failedMessageRepository.findByMessageKey(messageKey)
+        return ResponseEntity.ok(messages.map { it.toDto() })
+    }
 }
 
 // DTOs
@@ -183,4 +242,13 @@ data class BulkStatusUpdateRequest(
 data class BulkStatusUpdateResponse(
     val updatedCount: Int,
     val status: FailedMessageStatus
+)
+
+data class SearchRequest(
+    val status: FailedMessageStatus? = null,
+    val topic: String? = null,
+    val startDate: String? = null,
+    val endDate: String? = null,
+    val minRetryCount: Int? = null,
+    val errorKeyword: String? = null
 )

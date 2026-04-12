@@ -1,5 +1,6 @@
 package com.kafka.exam.kafkaexam.consumer
 
+import com.kafka.exam.kafkaexam.idempotent.IdempotentConsumerService
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.slf4j.LoggerFactory
 import org.springframework.kafka.annotation.KafkaListener
@@ -8,7 +9,7 @@ import org.springframework.stereotype.Service
 
 @Service
 class BatchKafkaConsumer(
-    private val idempotencyRepository: IdempotencyRepository
+    private val idempotentConsumerService: IdempotentConsumerService
 ) {
 
     private val log = LoggerFactory.getLogger(BatchKafkaConsumer::class.java)
@@ -26,22 +27,14 @@ class BatchKafkaConsumer(
         var skipCount = 0
         var failCount = 0
 
-        val newRecords = records.filter { record ->
-            val messageKey = "${record.topic()}-${record.partition()}-${record.offset()}"
-            if (idempotencyRepository.isAlreadyProcessed(messageKey)) {
-                skipCount++
-                false
-            } else {
-                true
-            }
-        }
-
-        for (record in newRecords) {
+        for (record in records) {
             try {
-                processMessage(record)
-                val messageKey = "${record.topic()}-${record.partition()}-${record.offset()}"
-                idempotencyRepository.markAsProcessed(messageKey)
-                successCount++
+                val processed = idempotentConsumerService.processIdempotently(
+                    record = record,
+                    messageIdExtractor = { idempotentConsumerService.defaultMessageId(it) },
+                    processor = { processMessage(it) }
+                )
+                if (processed) successCount++ else skipCount++
             } catch (e: Exception) {
                 log.error("메시지 처리 실패 - partition: {}, offset: {}, error: {}",
                     record.partition(), record.offset(), e.message)

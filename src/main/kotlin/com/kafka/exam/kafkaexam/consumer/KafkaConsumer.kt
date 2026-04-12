@@ -2,6 +2,7 @@ package com.kafka.exam.kafkaexam.consumer
 
 import com.kafka.exam.kafkaexam.consumer.dlt.FailedMessage
 import com.kafka.exam.kafkaexam.consumer.dlt.FailedMessageRepository
+import com.kafka.exam.kafkaexam.idempotent.IdempotentConsumerService
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.slf4j.LoggerFactory
 import org.springframework.kafka.annotation.DltHandler
@@ -13,7 +14,7 @@ import org.springframework.stereotype.Service
 
 @Service
 class KafkaConsumer(
-    private val idempotencyRepository: IdempotencyRepository,
+    private val idempotentConsumerService: IdempotentConsumerService,
     private val failedMessageRepository: FailedMessageRepository
 ) {
 
@@ -21,24 +22,15 @@ class KafkaConsumer(
 
     @KafkaListener(topics = ["\${kafka.topic:test-topic}"], groupId = "\${spring.kafka.consumer.group-id}")
     fun consume(record: ConsumerRecord<String, String>, ack: Acknowledgment) {
-        val messageKey = "${record.topic()}-${record.partition()}-${record.offset()}"
-
-        if (idempotencyRepository.isAlreadyProcessed(messageKey)) {
-            log.info("중복 메시지 스킵 - key: {}, messageKey: {}", record.key(), messageKey)
-            ack.acknowledge()
-            return
-        }
-
-        log.info(
-            "Received message - topic: {}, partition: {}, key: {}, value: {}",
-            record.topic(),
-            record.partition(),
-            record.key(),
-            record.value()
+        val processed = idempotentConsumerService.processIdempotently(
+            record = record,
+            messageIdExtractor = { idempotentConsumerService.defaultMessageId(it) },
+            processor = { processMessage(it) }
         )
 
-        processMessage(record)
-        idempotencyRepository.markAsProcessed(messageKey)
+        if (!processed) {
+            log.info("중복 메시지 스킵 - key: {}", record.key())
+        }
         ack.acknowledge()
     }
 

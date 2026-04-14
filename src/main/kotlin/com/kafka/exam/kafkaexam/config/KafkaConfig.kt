@@ -2,6 +2,8 @@ package com.kafka.exam.kafkaexam.config
 
 import com.kafka.exam.kafkaexam.interceptor.LoggingConsumerInterceptor
 import com.kafka.exam.kafkaexam.interceptor.LoggingProducerInterceptor
+import com.kafka.exam.kafkaexam.tracing.TracingProducerInterceptor
+import com.kafka.exam.kafkaexam.tracing.TracingRecordInterceptor
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.common.serialization.StringDeserializer
@@ -21,7 +23,8 @@ class KafkaConfig(
     @Value("\${spring.kafka.consumer.group-id}") private val groupId: String,
     @Value("\${kafka.transaction.id-prefix:kafka-tx-}") private val transactionIdPrefix: String,
     @Value("\${kafka.batch.max-poll-records:100}") private val maxPollRecords: Int,
-    @Value("\${kafka.batch.concurrency:3}") private val batchConcurrency: Int
+    @Value("\${kafka.batch.concurrency:3}") private val batchConcurrency: Int,
+    private val tracingRecordInterceptor: TracingRecordInterceptor
 ) {
 
     private val log = LoggerFactory.getLogger(KafkaConfig::class.java)
@@ -32,7 +35,8 @@ class KafkaConfig(
         val config = mapOf(
             ProducerConfig.BOOTSTRAP_SERVERS_CONFIG to bootstrapServers,
             ProducerConfig.ACKS_CONFIG to "all",
-            ProducerConfig.INTERCEPTOR_CLASSES_CONFIG to LoggingProducerInterceptor::class.java.name
+            ProducerConfig.INTERCEPTOR_CLASSES_CONFIG to
+                "${LoggingProducerInterceptor::class.java.name},${TracingProducerInterceptor::class.java.name}"
         )
         return DefaultKafkaProducerFactory(config, StringSerializer(), StringSerializer())
     }
@@ -45,7 +49,8 @@ class KafkaConfig(
             ProducerConfig.ACKS_CONFIG to "all",
             ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG to true,  // 멱등성 필수
             ProducerConfig.RETRIES_CONFIG to Int.MAX_VALUE,
-            ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION to 5
+            ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION to 5,
+            ProducerConfig.INTERCEPTOR_CLASSES_CONFIG to TracingProducerInterceptor::class.java.name
         )
         val factory = DefaultKafkaProducerFactory<String, String>(config, StringSerializer(), StringSerializer())
         factory.setTransactionIdPrefix(transactionIdPrefix)
@@ -87,6 +92,7 @@ class KafkaConfig(
         factory.setConsumerFactory(consumerFactory())
         factory.setConcurrency(3)
         factory.containerProperties.ackMode = ContainerProperties.AckMode.MANUAL_IMMEDIATE
+        factory.setRecordInterceptor(tracingRecordInterceptor)
         // @RetryableTopic이 에러 처리를 담당하므로 별도 ErrorHandler 설정 불필요
         return factory
     }
@@ -116,6 +122,7 @@ class KafkaConfig(
         factory.setBatchListener(true)  // 배치 모드 활성화
         factory.containerProperties.ackMode = ContainerProperties.AckMode.MANUAL_IMMEDIATE
         factory.containerProperties.isAsyncAcks = true
+        // 배치 리스너는 RecordInterceptor 대신 BatchInterceptor가 필요하므로 단순화를 위해 생략
         return factory
     }
 }

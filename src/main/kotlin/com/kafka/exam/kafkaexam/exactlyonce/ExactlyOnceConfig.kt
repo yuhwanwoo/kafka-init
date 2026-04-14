@@ -1,5 +1,7 @@
 package com.kafka.exam.kafkaexam.exactlyonce
 
+import com.kafka.exam.kafkaexam.tracing.TracingProducerInterceptor
+import com.kafka.exam.kafkaexam.tracing.TracingRecordInterceptor
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.common.serialization.StringDeserializer
@@ -20,7 +22,8 @@ import org.springframework.kafka.transaction.KafkaTransactionManager
 class ExactlyOnceConfig(
     @Value("\${spring.kafka.bootstrap-servers}") private val bootstrapServers: String,
     @Value("\${spring.kafka.consumer.group-id}") private val groupId: String,
-    @Value("\${kafka.eos.transaction-id-prefix:eos-tx-}") private val eosTransactionIdPrefix: String
+    @Value("\${kafka.eos.transaction-id-prefix:eos-tx-}") private val eosTransactionIdPrefix: String,
+    private val tracingRecordInterceptor: TracingRecordInterceptor
 ) {
 
     // EOS 전용 ProducerFactory - 멱등성 + 트랜잭션
@@ -32,7 +35,8 @@ class ExactlyOnceConfig(
             ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG to true,
             ProducerConfig.RETRIES_CONFIG to Int.MAX_VALUE,
             ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION to 5,
-            ProducerConfig.TRANSACTION_TIMEOUT_CONFIG to 60000
+            ProducerConfig.TRANSACTION_TIMEOUT_CONFIG to 60000,
+            ProducerConfig.INTERCEPTOR_CLASSES_CONFIG to TracingProducerInterceptor::class.java.name
         )
         val factory = DefaultKafkaProducerFactory<String, String>(config, StringSerializer(), StringSerializer())
         factory.setTransactionIdPrefix(eosTransactionIdPrefix)
@@ -71,6 +75,7 @@ class ExactlyOnceConfig(
         factory.containerProperties.kafkaAwareTransactionManager = eosKafkaTransactionManager()
         // RECORD 모드: 트랜잭션 매니저가 각 레코드 처리 후 offset을 트랜잭션과 함께 커밋
         factory.containerProperties.ackMode = ContainerProperties.AckMode.RECORD
+        factory.setRecordInterceptor(tracingRecordInterceptor)
         factory.setConcurrency(1)
         return factory
     }
